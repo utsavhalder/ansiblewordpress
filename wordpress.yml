@@ -1,0 +1,60 @@
+---
+ - hosts: all
+   become: true
+   tasks:
+    - name: Update Operatingsystems
+      command: apt-get update
+      
+    - name: Install packages
+      apt: name= {{ item }} state=latest
+      with_items:
+       - apache2
+       - mysql-server
+       - php
+       
+    - name: Start services
+      service: name=apache2 state=started
+      
+    - name: Start service1
+      service: name=mysql state=started   
+            
+    - name: createinfophp file
+      copy: content="<?php  phpinfo();?>" dest=/var/www/html
+    
+    - name: Install packages
+      apt: name= {{ item }} state=latest
+      with_items:
+       - libapache2-mod-php5 
+       - php5-mcrypt 
+       - php5-gd 
+       - libssh2-php
+       
+    - name: create mysql root password for first time
+      command: mysqladmin -u root password 12345678
+             
+    - name: create mysqlcommands
+      copy: src=/var/mysqlcommands dest=/tmp/mysqlcommands
+      
+    - name: Login to mysql database
+      command: mysql -uroot -p12345678 < /tmp/mysqlcommands
+      
+    - name: Install Package
+      command: wget http://wordpress.org/latest.tar.gz -o /tmp/latest.tar.gz 
+      
+    - name: Untar file
+      command: tar xzvf /tmp/latest.tar.gz -o /root/
+      
+    - name: Copy from Wordpress
+      command: cp -R /root/wordpress/* /var/www/html/
+      
+    - name: create wpconfigphp file
+      copy: src=/root/wp-config-sample.php dest=/var/www/html/wp-config.php
+      
+    - name: Chnage ownership
+      command: chown -R www-data:www-data /var/www/html/*
+      
+    - name: creating directory
+      command: mkdir /var/www/html/wp-content/uploads
+      
+    - name: change ownership 
+      command: chown -R :www-data /var/www/html/wp-content/uploads
